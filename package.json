@@ -1,0 +1,13 @@
+{
+    "name": "snake-game",
+    "version": "1.0.0",
+    "license": "MIT",
+    "scripts": {
+        "start": "node cli.js"
+    },
+    "dependencies": {
+        "import-jsx": "^4.0.0",
+        "ink": "^3.0.8",
+        "react": "^16.14.0"
+    }
+}
