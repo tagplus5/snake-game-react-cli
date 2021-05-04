@@ -170,7 +170,7 @@ const App = () => {
     return (
         <Box flexDirection='column' alignItems='center'>
             <Text>
-                <Text color="green">Snake</Text> game
+                <Text color="green">Snake</Text> game {snakeSegments.length}
 				</Text>
             {snakeDead ? (
                 <EndScreen size={FIELD_SIZE} />
