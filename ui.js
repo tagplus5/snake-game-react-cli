@@ -5,7 +5,7 @@ const useInterval = require('./useInterval');
 const importJsx = require('import-jsx');
 const EndScreen = importJsx('./endScreen');
 
-// константы с кодами кнопок клавиатуры
+// Константы с кодами кнопок клавиатуры
 const ARROW_UP = "\u001B[A";
 const ARROW_DOWN = "\u001B[B";
 const ARROW_RIGHT = "\u001B[C";
@@ -22,12 +22,12 @@ const FIELD_ROW = [...new Array(FIELD_SIZE).keys()];
 let foodItem = newFoodItem();
 
 // Новые координаты еды 
- function newFoodItem(){
-     return {
+function newFoodItem() {
+    return {
         x: Math.floor(Math.random() * FIELD_SIZE),
         y: Math.floor(Math.random() * FIELD_SIZE),
     };
- }
+}
 
 // Все направления движения змейки
 const DIRECTION = {
@@ -37,14 +37,14 @@ const DIRECTION = {
     BOTTOM: { x: 0, y: 1 },
 }
 
-// Проверка ячейки на наличие еды или змейки и отображение еды, змеи или точки.
+// Проверка ячейки на наличие еды или змейки и отображение еды, змеи или точки
 function getItem(x, y, snakeSegments) {
-    // Если текущие координаты совпадают с координатами еды, отображаем еду.
+    // Если текущие координаты совпадают с координатами еды, отображаем еду
     if (foodItem.x === x && foodItem.y === y) {
         return <Text>🐭</Text>
     }
 
-    // Если текущие координаты совпадают с координатами змеи, отображаем змею.
+    // Если текущие координаты совпадают с координатами змеи, отображаем змею
     for (const segment of snakeSegments) {
         if (segment.x === x && segment.y === y) {
             return <Text>🐍</Text>
@@ -55,7 +55,7 @@ function getItem(x, y, snakeSegments) {
     return <Text> . </Text>
 }
 
-// Ограничиваем передвижение размером поля. j - это координата.
+// Ограничиваем передвижение размером поля. j - это координата
 function limitByField(j) {
     if (j >= FIELD_SIZE) {
         return 0;
@@ -72,23 +72,22 @@ function limitByField(j) {
 function newSnakePosition(segments, direction) {
     // head -координаты головы змейки
     const [head] = segments;
-    // новые координаты головы змейки
+    // Новые координаты головы змейки
     const newHead = {
         x: limitByField(head.x + direction.x),
         y: limitByField(head.y + direction.y)
     };
-    // если столкнулись с едой, змейка растет
+    // Eсли столкнулись с едой, змейка растет
     if (eatFood(newHead, foodItem)) {
         foodItem = newFoodItem();
         return [newHead, ...segments];
     };
-    //не съели еду - координаты сегментов - голова + все сегменты без последнего
+    //Не съели еду - координаты сегментов - голова + все сегменты без последнего
     return [newHead, ...segments.slice(0, -1)];
 }
 
-// определяет что мы столкнулись с едой 
-// сравнение координат головы и еды
-// если они совпадают, возвращаем true
+// Определяет что мы столкнулись с едой 
+// Сравнивает координаты головы и еды и если они совпадают, возвращаем true
 function eatFood(head, foodItem) {
     if (head.x === foodItem.x && head.y === foodItem.y) {
         return true;
@@ -96,7 +95,19 @@ function eatFood(head, foodItem) {
     return false;
 }
 
-// создание игрового поля:
+// Проверка умерла ли змейка
+function isSnakeDead(segments) {
+    const [head, ...tail] = segments;
+    const snakeEatItSelf = tail.find(segment => segment.x === head.x && segment.y === head.y);
+    if (snakeEatItSelf) {
+        return true;
+    }
+    return false;
+}
+
+
+
+// Создание игрового поля:
 const App = () => {
     // Добавляем координаты змейки используя хук 'useState':
     const [snakeSegments, setSnakeSegments] = useState([
@@ -129,18 +140,13 @@ const App = () => {
         });
     }, []);
 
-    const [head, ...tail] = snakeSegments;
+    const snakeDead = isSnakeDead(snakeSegments);
 
-    const intersectsWithItSelf = tail.some(segment => segment.x === head.x && segment.y === head.y
-    );
-
-    // Таймер в реакте с хуками:
+    // Таймер в реакте с хуками
     // Изменение координат змейки через промежуток времени
     useInterval(() => {
         setSnakeSegments(segments => newSnakePosition(segments, direction))
-    }, intersectsWithItSelf ? null : 200);
-
-
+    }, snakeDead ? null : 200);
 
 
     return (
@@ -148,7 +154,7 @@ const App = () => {
             <Text>
                 <Text color="green">Snake</Text> game
 				</Text>
-            {intersectsWithItSelf ? (
+            {snakeDead ? (
                 <EndScreen size={FIELD_SIZE} />
             ) : (
                 /* игровое поле */
