@@ -5,11 +5,6 @@ const useInterval = require('./useInterval');
 const importJsx = require('import-jsx');
 const EndScreen = importJsx('./endScreen');
 
-// Константы с кодами кнопок клавиатуры
-const ARROW_UP = "\u001B[A";
-const ARROW_DOWN = "\u001B[B";
-const ARROW_RIGHT = "\u001B[C";
-const ARROW_LEFT = "\u001B[D";
 
 // Размер поля
 const FIELD_SIZE = 16;
@@ -17,17 +12,6 @@ const FIELD_SIZE = 16;
 // Ряд поля - содержит ячейки каждого ряда
 // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 const FIELD_ROW = [...new Array(FIELD_SIZE).keys()];
-
-// Храним координаты еды
-let foodItem = newFoodItem();
-
-// Новые координаты еды 
-function newFoodItem() {
-    return {
-        x: Math.floor(Math.random() * FIELD_SIZE),
-        y: Math.floor(Math.random() * FIELD_SIZE),
-    };
-}
 
 // Все направления движения змейки
 const DIRECTION = {
@@ -37,8 +21,31 @@ const DIRECTION = {
     BOTTOM: { x: 0, y: 1 },
 }
 
-// Проверка ячейки на наличие еды или змейки и отображение еды, змеи или точки
-function getItem(x, y, snakeSegments) {
+// Коды кнопок клавиатуры
+const ARROW_UP = "\u001B[A";
+const ARROW_DOWN = "\u001B[B";
+const ARROW_RIGHT = "\u001B[C";
+const ARROW_LEFT = "\u001B[D";
+
+// Новые координаты еды 
+function newFoodItem(snakeSegments) {
+    const food = {
+        x: Math.floor(Math.random() * FIELD_SIZE),
+        y: Math.floor(Math.random() * FIELD_SIZE),
+    };
+
+    // Если еда попадает на змейку, вызываем функцию еще один раз
+    const foodOnSnake = snakeSegments.find(segment => segment.x === food.x && segment.y === food.y);
+    if(foodOnSnake){
+        return newFoodItem(snakeSegments);
+    }
+
+    return food;
+}
+
+
+// Проверка ячейки на наличие еды или змейки и отображение еды, змейки или точки
+function getItem(x, y, snakeSegments, foodItem) {
     // Если текущие координаты совпадают с координатами еды, отображаем еду
     if (foodItem.x === x && foodItem.y === y) {
         return <Text>🐭</Text>
@@ -67,11 +74,13 @@ function limitByField(j) {
 }
 
 // Расчет направления движения змейки.
-// segments - составляющие змейки
+// snakeSegments - составляющие змейки
 // direction - координаты направления движения
-function newSnakePosition(segments, direction) {
+// foodItem - координаты еды
+// setFoodItem - функция для изменения foodItem
+function newSnakePosition(snakeSegments, direction, foodItem, setFoodItem) {
     // head -координаты головы змейки
-    const [head] = segments;
+    const [head] = snakeSegments;
     // Новые координаты головы змейки
     const newHead = {
         x: limitByField(head.x + direction.x),
@@ -79,11 +88,17 @@ function newSnakePosition(segments, direction) {
     };
     // Eсли столкнулись с едой, змейка растет
     if (eatFood(newHead, foodItem)) {
-        foodItem = newFoodItem();
-        return [newHead, ...segments];
+        // Новая змейка состоит из новой головы и существующих сегментов
+        const newSnake = [newHead, ...snakeSegments];
+
+        // Новые координаты еды
+        setFoodItem(newFoodItem(newSnake));
+
+        return newSnake;
     };
+
     //Не съели еду - координаты сегментов - голова + все сегменты без последнего
-    return [newHead, ...segments.slice(0, -1)];
+    return [newHead, ...snakeSegments.slice(0, -1)];
 }
 
 // Определяет что мы столкнулись с едой 
@@ -96,16 +111,14 @@ function eatFood(head, foodItem) {
 }
 
 // Проверка умерла ли змейка
-function isSnakeDead(segments) {
-    const [head, ...tail] = segments;
+function isSnakeDead(snakeSegments) {
+    const [head, ...tail] = snakeSegments;
     const snakeEatItSelf = tail.find(segment => segment.x === head.x && segment.y === head.y);
     if (snakeEatItSelf) {
         return true;
     }
     return false;
 }
-
-
 
 // Создание игрового поля:
 const App = () => {
@@ -116,11 +129,16 @@ const App = () => {
         { x: 8, y: 8 },
     ]);
 
-    // Задаем стартовое направление змейки:
+    // Координаты еды 
+    const [foodItem, setFoodItem] = useState(newFoodItem(snakeSegments));
+
+    // Задаем стартовое направление змейки и функцию изменения направления
     const [direction, setDirection] = useState(DIRECTION.LEFT);
 
+    // Хук реакта для работы с stdin(берем из ink)
     const { stdin, setRawMode } = useStdin();
 
+    // Хук реакта - получаем сигналы с клавиатуры
     useEffect(() => {
         setRawMode(true);
         stdin.on("data", data => {
@@ -145,7 +163,7 @@ const App = () => {
     // Таймер в реакте с хуками
     // Изменение координат змейки через промежуток времени
     useInterval(() => {
-        setSnakeSegments(segments => newSnakePosition(segments, direction))
+        setSnakeSegments(segments => newSnakePosition(segments, direction, foodItem, setFoodItem))
     }, snakeDead ? null : 200);
 
 
@@ -166,15 +184,13 @@ const App = () => {
                             {FIELD_ROW.map(x => (
                                 // строки; key - число от 0 до FIELD_SIZE
                                 <Box key={x}>
-                                    <Text> {getItem(x, y, snakeSegments)} </Text>
+                                    <Text> {getItem(x, y, snakeSegments, foodItem)} </Text>
                                 </Box>
                             ))}
                         </Box>
                     ))}
                 </Box>
             )}
-
-
         </Box>
     );
 };
