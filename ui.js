@@ -144,16 +144,36 @@ const App = () => {
         stdin.on("data", data => {
             const value = data.toString();
             if (value == ARROW_UP) {
-                setDirection(DIRECTION.TOP);
+                setDirection(d => {
+                    if (d.x === DIRECTION.BOTTOM.x && d.y === DIRECTION.BOTTOM.y) {
+                        return d;
+                    }
+                    return DIRECTION.TOP
+                });
             }
             if (value == ARROW_DOWN) {
-                setDirection(DIRECTION.BOTTOM);
+                setDirection(d => {
+                    if (d.x === DIRECTION.TOP.x && d.y === DIRECTION.TOP.y) {
+                        return d;
+                    }
+                    return DIRECTION.BOTTOM
+                });
             }
             if (value == ARROW_LEFT) {
-                setDirection(DIRECTION.LEFT);
+                setDirection(d => {
+                    if (d.x === DIRECTION.RIGHT.x && d.y === DIRECTION.RIGHT.y) {
+                        return d;
+                    }
+                    return DIRECTION.LEFT
+                });
             }
             if (value == ARROW_RIGHT) {
-                setDirection(DIRECTION.RIGHT);
+                setDirection(d => {
+                    if (d.x === DIRECTION.LEFT.x && d.y === DIRECTION.LEFT.y) {
+                        return d;
+                    }
+                    return DIRECTION.RIGHT
+                });
             }
         });
     }, []);
